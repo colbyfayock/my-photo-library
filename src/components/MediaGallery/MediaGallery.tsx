@@ -143,7 +143,7 @@ const MediaGallery = ({ resources: initialResources, tag }: MediaGalleryProps) =
                       </label>
                       <Link
                         className={`block cursor-pointer border-8 transition-[border] ${isChecked ? 'border-blue-500' : 'border-white'}`}
-                        href="#"
+                        href={`/resources/${resource.asset_id}`}
                       >
                         <CldImage
                           width={resource.width}

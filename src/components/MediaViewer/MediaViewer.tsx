@@ -2,20 +2,25 @@
 
 import {  useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban } from 'lucide-react';
+import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquare, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { CldImageProps } from 'next-cloudinary';
 
 import Container from '@/components/Container';
+import CldImage from '@/components/CldImage';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
+import { CloudinaryResource } from '@/types/cloudinary';
+
+
 interface Deletion {
   state: string;
 }
 
-const MediaViewer = ({ resource }: { resource: { id: string; width: number; height: number; } }) => {
+const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
   const sheetFiltersRef = useRef<HTMLDivElement | null>(null);
   const sheetInfoRef = useRef<HTMLDivElement | null>(null);
 
@@ -25,6 +30,51 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
   const [infoSheetIsOpen, setInfoSheetIsOpen] = useState(false);
   const [deletion, setDeletion] = useState<Deletion>();
 
+  const [enhancement, setEnhancement]= useState<string>();
+  const [crop, setCrop]= useState<string>();
+  const [filter, setFilter]= useState<string>();
+
+  type Transformations = Omit<CldImageProps, "src" | "alt">;
+  const transformations: Transformations = {};
+
+  if ( enhancement === 'restore' ) {
+    transformations.restore = true;
+  } else if ( enhancement === 'improve' ) {
+    transformations.improve = true;
+  } else if ( enhancement === 'remove-background' ) {
+    transformations.removeBackground = true;
+  }
+
+  if ( crop === 'square' ) {
+    if ( resource.width > resource.height ) {
+      transformations.height = resource.width;
+    } else {
+      transformations.width = resource.height;
+    }
+    transformations.crop = {
+      source: true,
+      type: 'fill'
+    }
+  } else if ( crop === 'landscape' ) {
+    transformations.height = Math.floor(resource.width / (16/9))
+    transformations.crop = {
+      source: true,
+      type: 'fill'
+    }
+  } else if ( crop === 'portrait' ) {
+    transformations.width = Math.floor(resource.height / (16/9))
+    transformations.crop = {
+      source: true,
+      type: 'fill'
+    }
+  }
+
+  if ( typeof filter === 'string' && ['grayscale', 'sepia'].includes(filter) ) {
+    transformations[filter as keyof Transformations] = true;
+  } else if ( typeof filter === 'string' && ['sizzle'].includes(filter) ) {
+    transformations.art = filter;
+  }
+
   // Canvas sizing based on the image dimensions. The tricky thing about
   // showing a single image in a space like this in a responsive way is trying
   // to take up as much room as possible without distorting it or upscaling
@@ -32,8 +82,8 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
   // determine whether it's landscape, portrait, or square, and change a little
   // CSS to make it appear centered and scalable!
 
-  const canvasHeight = resource.height;
-  const canvasWidth = resource.width;
+  const canvasHeight = transformations.height || resource.height;
+  const canvasWidth = transformations.width || resource.width;
 
   const isSquare = canvasHeight === canvasWidth;
   const isLandscape = canvasWidth > canvasHeight;
@@ -141,9 +191,43 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
               </SheetHeader>
               <ul className="grid gap-2">
                 <li>
-                  <Button variant="ghost" className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 border-white`}>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${!enhancement ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setEnhancement(undefined)}
+                  >
                     <Ban className="w-5 h-5 mr-3" />
                     <span className="text-[1.01rem]">None</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${enhancement === 'improve' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setEnhancement('improve')}
+                  >
+                    <Wand2 className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Improve</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${enhancement === 'restore' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setEnhancement('restore')}
+                  >
+                    <PencilRuler className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Restore</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${enhancement === 'remove-background' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setEnhancement('remove-background')}
+                  >
+                    <ScissorsSquare className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Remove Background</span>
                   </Button>
                 </li>
               </ul>
@@ -154,9 +238,43 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
               </SheetHeader>
               <ul className="grid gap-2">
                 <li>
-                  <Button variant="ghost" className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 border-white`}>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${!crop ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setCrop(undefined)}
+                  >
                     <Image className="w-5 h-5 mr-3" />
                     <span className="text-[1.01rem]">Original</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${crop === 'square' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setCrop('square')}
+                  >
+                    <Square className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Square</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${crop === 'landscape' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setCrop('landscape')}
+                  >
+                    <RectangleHorizontal className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Landscape</span>
+                  </Button>
+                </li>
+                <li>
+                  <Button
+                    variant="ghost"
+                    className={`text-left justify-start w-full h-14 border-4 bg-zinc-700 ${crop === 'portrait' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setCrop('portrait')}
+                  >
+                    <RectangleVertical className="w-5 h-5 mr-3" />
+                    <span className="text-[1.01rem]">Portrait</span>
                   </Button>
                 </li>
               </ul>
@@ -167,12 +285,61 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
               </SheetHeader>
               <ul className="grid grid-cols-2 gap-2">
                 <li>
-                  <button className={`w-full border-4 border-white`}>
-                    <img
-                      width={resource.width}
-                      height={resource.height}
-                      src="/icon-1024x1024.png"
+                  <button
+                    className={`w-full border-4 ${!filter ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setFilter(undefined)}
+                  >
+                    <CldImage
+                      width={156}
+                      height={156}
+                      crop="fill"
+                      src={resource.public_id}
                       alt="No Filter"
+                    />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`w-full border-4 ${filter === 'sepia' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setFilter('sepia')}
+                  >
+                    <CldImage
+                      width={156}
+                      height={156}
+                      crop="fill"
+                      sepia
+                      src={resource.public_id}
+                      alt="Sepia"
+                    />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`w-full border-4 ${filter === 'sizzle' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setFilter('sizzle')}
+                  >
+                    <CldImage
+                      width={156}
+                      height={156}
+                      crop="fill"
+                      art="sizzle"
+                      src={resource.public_id}
+                      alt="Sizzle"
+                    />
+                  </button>
+                </li>
+                <li>
+                  <button
+                    className={`w-full border-4 ${filter === 'grayscale' ? 'border-white' : 'border-transparent'}`}
+                    onClick={() => setFilter('grayscale')}
+                  >
+                    <CldImage
+                      width={156}
+                      height={156}
+                      crop="fill"
+                      grayscale
+                      src={resource.public_id}
+                      alt="Grayscale"
                     />
                   </button>
                 </li>
@@ -237,7 +404,7 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
               <li className="mb-3">
                 <strong className="block text-xs font-normal text-zinc-400 mb-1">ID</strong>
                 <span className="flex gap-4 items-center text-zinc-100">
-                  { resource.id }
+                  { resource.public_id }
                 </span>
               </li>
             </ul>
@@ -292,13 +459,15 @@ const MediaViewer = ({ resource }: { resource: { id: string; width: number; heig
       {/** Asset viewer */}
 
       <div className="relative flex justify-center items-center align-center w-full h-full">
-        <img
+        <CldImage
+          key={JSON.stringify(transformations)}
           className="object-contain"
           width={resource.width}
           height={resource.height}
-          src="/icon-1024x1024.png"
-          alt="Cloudinary Logo"
+          src={resource.public_id}
+          alt={`Image ${resource.public_id}`}
           style={imgStyles}
+          {...transformations}
         />
       </div>
     </div>
