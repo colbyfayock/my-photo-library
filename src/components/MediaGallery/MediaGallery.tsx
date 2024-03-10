@@ -28,8 +28,6 @@ const MediaGallery = ({ resources: initialResources, tag }: MediaGalleryProps) =
     tag
   });
 
-  console.log('resources', resources)
-
   const [selected, setSelected] = useState<Array<string>>([]);
   const [creation, setCreation] = useState();
 

@@ -2,8 +2,10 @@
 
 import {  useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquare, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
-import { CldImageProps } from 'next-cloudinary';
+import { useRouter } from 'next/navigation';
+import { Blend, ChevronLeft, ChevronDown, Crop, Info, Pencil, Trash2, Wand2, Image, Ban, PencilRuler, ScissorsSquare, Square, RectangleHorizontal, RectangleVertical, Loader2 } from 'lucide-react';
+import { CldImageProps, getCldImageUrl } from 'next-cloudinary';
+import { useQueryClient } from '@tanstack/react-query';
 
 import Container from '@/components/Container';
 import CldImage from '@/components/CldImage';
@@ -13,6 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
+import { formatBytes, addCommas } from '@/lib/utils';
+
 import { CloudinaryResource } from '@/types/cloudinary';
 
 
@@ -21,6 +25,10 @@ interface Deletion {
 }
 
 const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
+  console.log('resource', resource)
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  
   const sheetFiltersRef = useRef<HTMLDivElement | null>(null);
   const sheetInfoRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,6 +38,7 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
   const [infoSheetIsOpen, setInfoSheetIsOpen] = useState(false);
   const [deletion, setDeletion] = useState<Deletion>();
 
+  const [version, setVersion]= useState<number>(1);
   const [enhancement, setEnhancement]= useState<string>();
   const [crop, setCrop]= useState<string>();
   const [filter, setFilter]= useState<string>();
@@ -75,6 +84,8 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
     transformations.art = filter;
   }
 
+  const hasTransformations = Object.entries(transformations).length > 0;
+
   // Canvas sizing based on the image dimensions. The tricky thing about
   // showing a single image in a space like this in a responsive way is trying
   // to take up as much room as possible without distorting it or upscaling
@@ -113,6 +124,16 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
   }
 
   /**
+   * discardChanges
+   */
+
+  function discardChanges() {
+    setEnhancement(undefined);
+    setCrop(undefined);
+    setFilter(undefined);
+  }
+
+  /**
    * handleOnDeletionOpenChange
    */
 
@@ -121,6 +142,90 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
     if ( !isOpen ) {
       setDeletion(undefined);
     }
+  }
+
+  /**
+   * handleOnSave
+   */
+
+  async function handleOnSave() {
+    const url = getCldImageUrl({
+      width: resource.width,
+      height: resource.height,
+      src: resource.public_id,
+      format: 'default',
+      quality: 'default',
+      ...transformations
+    });
+
+    await fetch(url);
+
+    const results = await fetch('/api/upload', {
+      method: 'POST',
+      body: JSON.stringify({
+        publicId: resource.public_id,
+        url
+      })
+    }).then(r => r.json())
+
+    invalidateQueries();
+
+    closeMenus();
+    discardChanges();
+    setVersion(Date.now())
+  }
+
+  /**
+   * handleOnSaveCopy
+   */
+
+  async function handleOnSaveCopy() {
+    const url = getCldImageUrl({
+      width: resource.width,
+      height: resource.height,
+      src: resource.public_id,
+      format: 'default',
+      quality: 'default',
+      ...transformations
+    });
+
+    await fetch(url);
+
+    const { data } = await fetch('/api/upload', {
+      method: 'POST',
+      body: JSON.stringify({
+        url
+      })
+    }).then(r => r.json())
+
+    invalidateQueries();
+
+    router.push(`/resources/${data.asset_id}`)
+  }
+
+  async function handleOnDelete() {
+    if ( deletion?.state === 'deleting' ) {
+      return;
+    }
+    setDeletion({
+      state: 'deleting'
+    })
+    await fetch('/api/delete', {
+      method: 'POST',
+      body: JSON.stringify({
+        publicId: resource.public_id
+      })
+    })
+
+    invalidateQueries();
+
+    router.push('/');
+  }
+
+  function invalidateQueries() {
+    queryClient.invalidateQueries({
+      queryKey: ['resources', String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
+    })
   }
 
   // Listen for clicks outside of the panel area and if determined
@@ -149,14 +254,23 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
 
       {/** Modal for deletion */}
 
-      <Dialog open={!!deletion?.state} onOpenChange={handleOnDeletionOpenChange}>
+      <Dialog open={deletion && ['confirm', 'deleting'].includes(deletion.state)} onOpenChange={handleOnDeletionOpenChange}>
         <DialogContent data-exclude-close-on-click={true}>
           <DialogHeader>
             <DialogTitle className="text-center">Are you sure you want to delete?</DialogTitle>
           </DialogHeader>
           <DialogFooter className="justify-center sm:justify-center">
-            <Button variant="destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> Delete
+            <Button
+              variant="destructive"
+              onClick={handleOnDelete}
+            >
+              {deletion?.state === 'deleting' && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              {deletion?.state !== 'deleting' && (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -347,41 +461,49 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
             </TabsContent>
           </Tabs>
           <SheetFooter className="gap-2 sm:flex-col">
-            <div className="grid grid-cols-[1fr_4rem] gap-2">
-              <Button
-                variant="ghost"
-                className="w-full h-14 text-left justify-center items-center bg-blue-500"
-              >
-                <span className="text-[1.01rem]">
-                  Save
-                </span>
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full h-14 text-left justify-center items-center bg-blue-500"
-                  >
-                    <span className="sr-only">More Options</span>
-                    <ChevronDown className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" data-exclude-close-on-click={true}>
-                  <DropdownMenuGroup>
-                    <DropdownMenuItem>
-                      <span>Save as Copy</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {hasTransformations && (
+              <div className="grid grid-cols-[1fr_4rem] gap-2">
+                <Button
+                  variant="ghost"
+                  className="w-full h-14 text-left justify-center items-center bg-blue-500"
+                  onClick={handleOnSave}
+                >
+                  <span className="text-[1.01rem]">
+                    Save
+                  </span>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full h-14 text-left justify-center items-center bg-blue-500"
+                    >
+                      <span className="sr-only">More Options</span>
+                      <ChevronDown className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" data-exclude-close-on-click={true}>
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem
+                        onClick={handleOnSaveCopy}
+                      >
+                        <span>Save as Copy</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
             <Button
               variant="outline"
-              className="w-full h-14 text-left justify-center items-center bg-transparent border-zinc-600"
-              onClick={() => closeMenus()}
+              className={`w-full h-14 text-left justify-center items-center ${hasTransformations ? 'bg-red-500' : 'bg-transparent'} border-zinc-600`}
+              onClick={() => {
+                closeMenus();
+                discardChanges();
+              }}
             >
               <span className="text-[1.01rem]">
-                Close
+                {hasTransformations ? 'Cancel' : 'Close'}
               </span>
             </Button>
           </SheetFooter>
@@ -405,6 +527,54 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                 <strong className="block text-xs font-normal text-zinc-400 mb-1">ID</strong>
                 <span className="flex gap-4 items-center text-zinc-100">
                   { resource.public_id }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Date Created
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { new Date(resource.created_at).toLocaleString() }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Width
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { addCommas(resource.width) }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Height
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { addCommas(resource.height) }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Format
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { resource.format }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Size
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { formatBytes(resource.bytes) }
+                </span>
+              </li>
+              <li className="mb-3">
+                <strong className="block text-xs font-normal text-zinc-400 mb-1">
+                  Tags
+                </strong>
+                <span className="flex gap-4 items-center text-zinc-100">
+                  { resource.tags.join(', ') }
                 </span>
               </li>
             </ul>
@@ -460,13 +630,14 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
 
       <div className="relative flex justify-center items-center align-center w-full h-full">
         <CldImage
-          key={JSON.stringify(transformations)}
+          key={`${JSON.stringify(transformations)}-${version}`}
           className="object-contain"
           width={resource.width}
           height={resource.height}
           src={resource.public_id}
           alt={`Image ${resource.public_id}`}
           style={imgStyles}
+          version={version}
           {...transformations}
         />
       </div>
