@@ -1,24 +1,18 @@
-# Photo Library Starter
+# My Photo Library
 
-Hey freeCodeCamp 👋 this is your starting point for digging into building your own Photo Library using Next.js and Cloudinary.
+Demo for tutorial 
 
-## 🚀 Getting Started
+🚀 Demo: https://my-photo-library.vercel.app/
 
-To get started, first create your new application by running the command below:
-
-```
-npx create-next-app@latest -e https://github.com/colbyfayock/demo-photo-library-starter my-photo-library
-```
-
-> Tip: Alternatively, you can clone this repository, but running the above command helps with some additional tasks like resetting git history and installing dependencies!
-
-## Follow Along
+## Follow Along with the Tutorial
 
 Coming here from another place? Be sure to follow along with the tutorial over on freeCodeCamp:
-- Video:
-- Article: 
 
-## More Tutorials & Walkthroughs
+📺 YouTube: 
+
+📝 Article: 
+
+## More tutorials and walkthroughs
 
 🐦 [Follow me on Twitter](https://twitter.com/colbyfayock)
 
