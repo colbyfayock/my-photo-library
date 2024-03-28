@@ -466,7 +466,8 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                 <Button
                   variant="ghost"
                   className="w-full h-14 text-left justify-center items-center bg-blue-500"
-                  onClick={handleOnSave}
+                  onClick={() => alert('Saving disabled for demo')}
+                  // onClick={handleOnSave}
                 >
                   <span className="text-[1.01rem]">
                     Save
@@ -485,7 +486,8 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
                   <DropdownMenuContent className="w-56" data-exclude-close-on-click={true}>
                     <DropdownMenuGroup>
                       <DropdownMenuItem
-                        onClick={handleOnSaveCopy}
+                        onClick={() => alert('Saving disabled for demo')}
+                        // onClick={handleOnSaveCopy}
                       >
                         <span>Save as Copy</span>
                       </DropdownMenuItem>
@@ -618,7 +620,12 @@ const MediaViewer = ({ resource }: { resource: CloudinaryResource }) => {
             </Button>
           </li>
           <li>
-            <Button variant="ghost" className="text-white" onClick={() => setDeletion({ state: 'confirm' })}>
+            <Button
+              variant="ghost"
+              className="text-white"
+              onClick={() => alert('Deleting disabled for demo')}
+              // onClick={() => setDeletion({ state: 'confirm' })}
+            >
               <Trash2 className="h-6 w-6" />
               <span className="sr-only">Delete</span>
             </Button>

@@ -7,6 +7,10 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
+  return new Response(JSON.stringify({ error: 'Disabled for demo' }), {
+    status: 401
+  });
+
   const { url, publicId, tags = [] } = await request.json();
 
   const uploadOptions: Record<string, string | boolean | Array<string>> = {};
@@ -22,7 +26,7 @@ export async function POST(request: Request) {
   }
 
   const results = await cloudinary.uploader.upload(url, uploadOptions)
-  
+
   return Response.json({
     data: results
   })

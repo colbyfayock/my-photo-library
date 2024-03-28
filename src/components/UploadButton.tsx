@@ -15,18 +15,18 @@ const UploadButton = () => {
     addResources([results.info as CloudinaryResource])
   }
   return (
-    <CldUploadButton
-      signatureEndpoint="/api/sign-cloudinary-params"
-      options={{
-        autoMinimize: true,
-        tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
-      }}
-      onSuccess={handleOnSuccess}
-    >
-      <span className="flex gap-2 items-center">
+    // <CldUploadButton
+    //   signatureEndpoint="/api/sign-cloudinary-params"
+    //   options={{
+    //     autoMinimize: true,
+    //     tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
+    //   }}
+    //   onSuccess={handleOnSuccess}
+    // >
+      <span className="flex gap-2 items-center" onClick={() => alert('Upload disabled for demo')}>
         <Upload className="w-4 h-4" /> Upload
       </span>
-    </CldUploadButton>
+    // </CldUploadButton>
   );
 }
 

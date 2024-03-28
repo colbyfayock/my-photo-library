@@ -7,10 +7,14 @@ cloudinary.config({
 });
 
 export async function POST(request: Request) {
+  return new Response(JSON.stringify({ error: 'Disabled for demo' }), {
+    status: 401
+  });
+
   const { publicId } = await request.json();
 
   const results = await cloudinary.api.delete_resources([publicId])
-  
+
   return Response.json({
     data: results
   })

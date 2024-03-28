@@ -168,7 +168,8 @@ const MediaGallery = ({ resources: initialResources, tag }: MediaGalleryProps) =
               )}
               <DialogFooter className="justify-end sm:justify-end">
                 <Button
-                  onClick={handleOnSaveCreation}
+                  // onClick={handleOnSaveCreation}
+                  onClick={() => alert('Saving disabled for demo')}
                 >
                   {creation?.state === 'saving' && (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
