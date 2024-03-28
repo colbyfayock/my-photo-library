@@ -1,4 +1,4 @@
-# My Photo Library
+# Photo Library & Editor with Next.js & Cloudinary
 
 Demo for tutorial 
 
