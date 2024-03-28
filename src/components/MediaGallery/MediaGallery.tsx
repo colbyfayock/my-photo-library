@@ -108,7 +108,8 @@ const MediaGallery = ({ resources: initialResources, tag }: MediaGalleryProps) =
     const { data } = await fetch('/api/upload', {
       method: 'POST',
       body: JSON.stringify({
-        url: creation.url
+        url: creation.url,
+        tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_CREATIONS_TAG)]
       })
     }).then(r => r.json())
 
