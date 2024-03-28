@@ -19,7 +19,8 @@ const UploadButton = () => {
     //   signatureEndpoint="/api/sign-cloudinary-params"
     //   options={{
     //     autoMinimize: true,
-    //     tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)]
+    //     tags: [String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG)],
+    //     folder: String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_FOLDER))
     //   }}
     //   onSuccess={handleOnSuccess}
     // >

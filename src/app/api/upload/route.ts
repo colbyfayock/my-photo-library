@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     uploadOptions.tags = [
       String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_TAG),
       ...tags
-    ]
+    ];
+    uploadOptions.folder = String(process.env.NEXT_PUBLIC_CLOUDINARY_LIBRARY_FOLDER);
   }
 
   const results = await cloudinary.uploader.upload(url, uploadOptions)
