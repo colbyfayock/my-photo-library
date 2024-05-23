@@ -1,6 +1,6 @@
 # Photo Library & Editor with Next.js & Cloudinary
 
-Demo for tutorial 
+Demo for tutorial [Build a Google Photos Clone with Next.js and Cloudinary](https://www.youtube.com/watch?v=l71rTm_0260)
 
 🚀 Demo: https://my-photo-library.vercel.app/
 
@@ -8,9 +8,7 @@ Demo for tutorial
 
 Coming here from another place? Be sure to follow along with the tutorial over on freeCodeCamp:
 
-📺 YouTube: 
-
-📝 Article: 
+📺 YouTube: https://www.youtube.com/watch?v=l71rTm_0260
 
 ## More Tutorials & Walkthroughs
 
